@@ -5,6 +5,7 @@ import json
 import sqlite3
 import sys
 import subprocess
+import datetime
 from pathlib import Path
 
 # 配置路径
@@ -104,6 +105,10 @@ def save_profile(name):
     # 记录当前配置文件名
     (PROFILES_DIR / "current_profile.txt").write_text(name)
     
+    # 记录最后使用时间
+    last_active_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    (profile_path / "last_active.txt").write_text(last_active_time)
+    
     email = get_current_account_email(profile_path / "state.vscdb")
     print(f"成功将当前账号保存为配置文件: {name} ({email})")
 
@@ -148,6 +153,10 @@ def switch_profile(name):
 
     # 更新当前配置文件记录
     (PROFILES_DIR / "current_profile.txt").write_text(name)
+    
+    # 记录最后使用时间
+    last_active_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    (profile_path / "last_active.txt").write_text(last_active_time)
     
     # 自动执行重置逻辑 (仅重置机器 ID，保留登录信息)
     print(f"正在为账号 '{name}' 自动生成新的机器 ID...")
@@ -296,10 +305,27 @@ def list_profiles_json():
     result = []
     for p in profiles:
         email = get_current_account_email(p / "state.vscdb")
+        
+        # 读取最后使用时间
+        last_active = ""
+        last_active_file = p / "last_active.txt"
+        if last_active_file.exists():
+            last_active = last_active_file.read_text().strip()
+        else:
+            # 如果没有记录文件，使用文件夹修改时间作为备选
+            mtime = os.path.getmtime(p)
+            last_active = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
+            # 顺便补写一下文件，防止下次还需要计算
+            try:
+                last_active_file.write_text(last_active)
+            except:
+                pass
+            
         result.append({
             "name": p.name,
             "email": email,
-            "is_current": p.name == current
+            "is_current": p.name == current,
+            "last_active": last_active
         })
     return result
 
@@ -329,6 +355,34 @@ def delete_profile(name):
             return False
     return False
 
+def rename_profile(old_name, new_name):
+    """重命名配置文件"""
+    old_path = PROFILES_DIR / old_name
+    new_path = PROFILES_DIR / new_name
+    
+    if not old_path.exists():
+        print(f"错误: 配置文件 '{old_name}' 不存在")
+        return False
+    
+    if new_path.exists():
+        print(f"错误: 配置文件 '{new_name}' 已存在")
+        return False
+        
+    try:
+        # 重命名文件夹
+        old_path.rename(new_path)
+        
+        # 如果重命名的是当前激活的账号，更新记录文件
+        current_file = PROFILES_DIR / "current_profile.txt"
+        if current_file.exists() and current_file.read_text().strip() == old_name:
+            current_file.write_text(new_name)
+            
+        print(f"成功将 '{old_name}' 重命名为 '{new_name}'")
+        return True
+    except Exception as e:
+        print(f"重命名失败: {e}")
+        return False
+
 def main():
     if len(sys.argv) < 2:
         print_usage()
@@ -357,6 +411,8 @@ def main():
         import_profiles(sys.argv[2])
     elif cmd == "delete" and len(sys.argv) > 2:
         delete_profile(sys.argv[2])
+    elif cmd == "rename" and len(sys.argv) > 3:
+        rename_profile(sys.argv[2], sys.argv[3])
     else:
         print(f"未知命令: {cmd}")
 

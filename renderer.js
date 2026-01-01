@@ -61,14 +61,19 @@ function renderTable() {
       tr.innerHTML = `
                 <td class="p-4"><input type="checkbox" class="profile-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500" data-name="${profile.name}" ${selectedProfiles.has(profile.name) ? "checked" : ""}></td>
                 <td class="p-4">
-                    <div class="font-medium text-slate-700">${profile.name}</div>
+                    <div class="profile-name-container flex items-center group cursor-pointer" onclick="startRename(this, '${profile.name}')">
+                        <div class="font-medium text-slate-700 name-text">${profile.name}</div>
+                        <svg class="w-3.5 h-3.5 ml-2 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                        </svg>
+                    </div>
                 </td>
                 <td class="p-4 text-slate-500 text-sm">${profile.email}</td>
                 <td class="p-4">
                     ${
                       profile.is_current
                         ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">当前激活</span>'
-                        : '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">闲置</span>'
+                        : `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">${profile.last_active || "从未激活"}</span>`
                     }
                 </td>
                 <td class="p-4 text-right">
@@ -139,6 +144,48 @@ function log(msg) {
 }
 
 // Global Handlers
+window.startRename = (container, oldName) => {
+  if (container.querySelector("input")) return;
+
+  const textEl = container.querySelector(".name-text");
+  const originalContent = container.innerHTML;
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = oldName;
+  input.className =
+    "w-full px-2 py-1 text-sm border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-200";
+
+  container.innerHTML = "";
+  container.appendChild(input);
+  input.focus();
+  input.select();
+
+  const finish = async (save) => {
+    const newName = input.value.trim();
+    if (save && newName && newName !== oldName) {
+      try {
+        log(`正在将 ${oldName} 重命名为 ${newName}...`);
+        await ipcRenderer.invoke("rename-profile", oldName, newName);
+        log("重命名成功");
+        await refresh();
+      } catch (err) {
+        log(`重命名失败: ${err}`);
+        container.innerHTML = originalContent;
+      }
+    } else {
+      container.innerHTML = originalContent;
+    }
+  };
+
+  input.onkeydown = (e) => {
+    if (e.key === "Enter") finish(true);
+    if (e.key === "Escape") finish(false);
+  };
+
+  input.onblur = () => finish(true);
+};
+
 window.handleSwitch = async (name) => {
   setButtonsEnabled(false);
   log(`正在切换到 ${name}...`);

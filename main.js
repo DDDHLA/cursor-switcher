@@ -109,6 +109,10 @@ ipcMain.handle("delete-profile", async (event, name) => {
   return await runPython(["delete", name]);
 });
 
+ipcMain.handle("rename-profile", async (event, oldName, newName) => {
+  return await runPython(["rename", oldName, newName]);
+});
+
 ipcMain.handle("delete-profiles", async (event, names) => {
   const results = [];
   for (const name of names) {
