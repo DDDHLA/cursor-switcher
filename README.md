@@ -34,6 +34,12 @@
 
 根据您的操作系统，选择对应的打包命令。打包后的安装包将生成在 `dist` 目录下。
 
+#### 一键打包所有平台
+```bash
+npm run build:all
+```
+该命令会同时生成 Windows (x64, x86, ARM64) 和 macOS (x64, ARM64) 的所有安装包。
+
 #### macOS (DMG)
 支持 Intel 芯片 (x64) 和 Apple Silicon (M1/M2/M3, arm64)。
 
