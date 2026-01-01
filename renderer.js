@@ -7,6 +7,11 @@ let pageSize = 10;
 let selectedProfiles = new Set();
 let searchQuery = "";
 
+window.onload = () => {
+  log("应用已启动");
+  refresh();
+};
+
 async function refresh() {
   try {
     log("正在刷新状态...");

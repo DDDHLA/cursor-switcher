@@ -6,6 +6,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1100,
     height: 750,
+    icon: path.join(__dirname, "assets/icon.svg"),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -39,20 +40,20 @@ function runPython(args) {
       ? path.join(process.resourcesPath, "cursor_manager.py")
       : path.join(__dirname, "cursor_manager.py");
 
-    const process = spawn(pythonPath, [scriptPath, ...args]);
+    const child = spawn(pythonPath, [scriptPath, ...args]);
 
     let stdout = "";
     let stderr = "";
 
-    process.stdout.on("data", (data) => {
+    child.stdout.on("data", (data) => {
       stdout += data.toString();
     });
 
-    process.stderr.on("data", (data) => {
+    child.stderr.on("data", (data) => {
       stderr += data.toString();
     });
 
-    process.on("close", (code) => {
+    child.on("close", (code) => {
       if (code === 0) {
         resolve(stdout.trim());
       } else {
