@@ -1,0 +1,35 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build outputs
+dist/
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+
+# Electron/OS
+.DS_Store
+.editorconfig
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Data files
+cursor_accounts.json
+cursor_accounts_backup.json
+accounts.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
