@@ -5,7 +5,14 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:mac-arm": "electron-builder --mac --arm64",
+    "build:mac-x64": "electron-builder --mac --x64",
+    "build:win": "electron-builder --win",
+    "build:win32": "electron-builder --win --ia32",
+    "build:win64": "electron-builder --win --x64",
+    "build:winarm": "electron-builder --win --arm64"
   },
   "keywords": [],
   "author": "",
@@ -18,8 +25,35 @@
     "appId": "com.cursor.switcher",
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": ["dmg"],
-      "icon": "build/icon.png"
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.svg"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.svg"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true
     },
     "dmg": {
       "contents": [

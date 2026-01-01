@@ -30,11 +30,45 @@
    npm start
    ```
 
-### 打包 DMG (macOS)
-```bash
-npm run build
-```
-打包后的安装包将生成在 `dist` 目录下。
+### 项目打包
+
+根据您的操作系统，选择对应的打包命令。打包后的安装包将生成在 `dist` 目录下。
+
+#### macOS (DMG)
+支持 Intel 芯片 (x64) 和 Apple Silicon (M1/M2/M3, arm64)。
+
+- **打包所有 macOS 版本**:
+  ```bash
+  npm run build:mac
+  ```
+- **仅打包 Apple Silicon (M系列芯片)**:
+  ```bash
+  npm run build:mac-arm
+  ```
+- **仅打包 Intel 芯片**:
+  ```bash
+  npm run build:mac-x64
+  ```
+
+#### Windows (EXE)
+支持 x64、x86 (32位) 以及 ARM64 架构。
+
+- **打包所有 Windows 版本**:
+  ```bash
+  npm run build:win
+  ```
+- **仅打包 x64 (64位)**:
+  ```bash
+  npm run build:win64
+  ```
+- **仅打包 x86 (32位)**:
+  ```bash
+  npm run build:win32
+  ```
+- **仅打包 ARM64**:
+  ```bash
+  npm run build:winarm
+  ```
 
 ## 📖 使用说明
 
