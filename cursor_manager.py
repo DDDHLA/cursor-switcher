@@ -8,8 +8,24 @@ import subprocess
 import datetime
 from pathlib import Path
 
+import platform
+
 # 配置路径
-CURSOR_DB_DIR = Path.home() / "Library/Application Support/Cursor/User/globalStorage"
+def get_cursor_db_dir():
+    home = Path.home()
+    system = platform.system()
+    if system == "Darwin":
+        return home / "Library/Application Support/Cursor/User/globalStorage"
+    elif system == "Windows":
+        appdata = os.getenv("APPDATA")
+        if appdata:
+            return Path(appdata) / "Cursor/User/globalStorage"
+        return home / "AppData/Roaming/Cursor/User/globalStorage"
+    else:
+        # Linux
+        return home / ".config/Cursor/User/globalStorage"
+
+CURSOR_DB_DIR = get_cursor_db_dir()
 STORAGE_JSON = CURSOR_DB_DIR / "storage.json"
 STATE_DB = CURSOR_DB_DIR / "state.vscdb"
 PROFILES_DIR = Path.home() / ".cursor_profiles"
@@ -17,22 +33,30 @@ PROFILES_DIR = Path.home() / ".cursor_profiles"
 def kill_cursor():
     """优雅地关闭 Cursor 进程"""
     print("正在尝试关闭 Cursor...")
+    system = platform.system()
     try:
-        # 使用 AppleScript 尝试优雅退出，避免弹出崩溃窗口
-        subprocess.run(["osascript", "-e", 'quit app "Cursor"'], check=False, capture_output=True)
-        
-        # 等待几秒让它退出
-        import time
-        for _ in range(5):
-            result = subprocess.run(["pgrep", "-f", "Cursor"], capture_output=True)
-            if result.returncode != 0:
-                print("Cursor 已成功关闭。")
-                return
-            time.sleep(0.5)
-        
-        # 如果还没关掉，再强制关闭
-        print("Cursor 未响应，正在强制关闭...")
-        subprocess.run(["pkill", "-9", "-f", "Cursor"], check=False)
+        if system == "Darwin":
+            # macOS: 使用 AppleScript 尝试优雅退出
+            subprocess.run(["osascript", "-e", 'quit app "Cursor"'], check=False, capture_output=True)
+            
+            import time
+            for _ in range(5):
+                result = subprocess.run(["pgrep", "-f", "Cursor"], capture_output=True)
+                if result.returncode != 0:
+                    print("Cursor 已成功关闭。")
+                    return
+                time.sleep(0.5)
+            
+            print("Cursor 未响应，正在强制关闭...")
+            subprocess.run(["pkill", "-9", "-f", "Cursor"], check=False)
+        elif system == "Windows":
+            # Windows: 使用 taskkill
+            subprocess.run(["taskkill", "/F", "/IM", "Cursor.exe", "/T"], check=False, capture_output=True)
+            print("已尝试关闭 Windows 上的 Cursor 进程。")
+        else:
+            # Linux
+            subprocess.run(["pkill", "-f", "cursor"], check=False)
+            
         time.sleep(1)
     except Exception as e:
         print(f"关闭 Cursor 时出错: {e}")
@@ -117,9 +141,23 @@ def open_cursor():
     print("正在重新打开 Cursor...")
     import time
     time.sleep(1) # 给系统一点缓冲时间
+    system = platform.system()
     try:
-        # 使用 open 指令打开
-        subprocess.Popen(["open", "-a", "Cursor"], start_new_session=True)
+        if system == "Darwin":
+            # macOS
+            subprocess.Popen(["open", "-a", "Cursor"], start_new_session=True)
+        elif system == "Windows":
+            # Windows: 尝试从默认安装路径打开
+            local_appdata = os.getenv("LOCALAPPDATA")
+            cursor_exe = Path(local_appdata) / "Programs/cursor/Cursor.exe"
+            if cursor_exe.exists():
+                subprocess.Popen([str(cursor_exe)], start_new_session=True, creationflags=subprocess.DETACHED_PROCESS)
+            else:
+                # 尝试直接运行，如果已在 PATH 中
+                subprocess.Popen(["cursor"], shell=True, start_new_session=True)
+        else:
+            # Linux
+            subprocess.Popen(["cursor"], start_new_session=True)
     except Exception as e:
         print(f"无法自动打开 Cursor: {e}")
 
@@ -283,15 +321,16 @@ def reset_current(only_machine_id=False):
 
 def print_usage():
     """打印帮助说明"""
+    python_cmd = "python" if platform.system() == "Windows" else "python3"
     print("\n" + "="*50)
     print("Cursor 账号切换助手 - 可用指令:")
-    print("  python3 cursor_manager.py list          - 列出所有账号")
-    print("  python3 cursor_manager.py save <name>   - 保存当前账号")
-    print("  python3 cursor_manager.py switch <name> - 切换到指定账号")
-    print("  python3 cursor_manager.py status        - 查看当前状态")
-    print("  python3 cursor_manager.py reset         - 重置当前账号 (登出并生成新 ID)")
-    print("  python3 cursor_manager.py export <path> - 批量导出配置文件")
-    print("  python3 cursor_manager.py import <path> - 批量导入配置文件")
+    print(f"  {python_cmd} cursor_manager.py list          - 列出所有账号")
+    print(f"  {python_cmd} cursor_manager.py save <name>   - 保存当前账号")
+    print(f"  {python_cmd} cursor_manager.py switch <name> - 切换到指定账号")
+    print(f"  {python_cmd} cursor_manager.py status        - 查看当前状态")
+    print(f"  {python_cmd} cursor_manager.py reset         - 重置当前账号 (登出并生成新 ID)")
+    print(f"  {python_cmd} cursor_manager.py export <path> - 批量导出配置文件")
+    print(f"  {python_cmd} cursor_manager.py import <path> - 批量导入配置文件")
     print("="*50 + "\n")
 
 def list_profiles_json():

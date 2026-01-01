@@ -34,7 +34,8 @@ app.on("activate", () => {
 // 处理与 Python 的交互
 function runPython(args) {
   return new Promise((resolve, reject) => {
-    const pythonPath = "python3";
+    // Windows 下通常是 python，macOS/Linux 下通常是 python3
+    const pythonPath = process.platform === "win32" ? "python" : "python3";
     // 在生产环境中，资源位于 Resources 目录下
     const scriptPath = app.isPackaged
       ? path.join(process.resourcesPath, "cursor_manager.py")
